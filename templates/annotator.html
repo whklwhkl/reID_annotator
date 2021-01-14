@@ -1,0 +1,27 @@
+<!doctype html>
+<title>annotator</title>
+
+<h1> Hello {{user}}! You've annotated {{done}} pairs! There're {{max}} pairs left to do!</h1>
+
+<p>Is the following two rows of images considered to be similar?</p>
+<form action="/submit" method="post">
+  <input type="hidden" name="name1" value="{{ name1 }}">
+  <input type="hidden" name="name2" value="{{ name2 }}">
+  <input class="btn btn-default" type="submit" name='submit' value="yes">
+  <input class="btn btn-default" type="submit" name='submit' value="no">
+</form>
+
+<table>
+  <tr>
+    <th>name</th>
+    <th>image</th>
+  </tr>
+  <tr>
+    <td>{{name1}}</td>
+    <td><img src="data:image/png;base64,{{ image1 }}" title="{{ name1 }}"></td>
+  </tr>
+  <tr>
+    <td>{{name2}}</td>
+    <td><img src="data:image/png;base64,{{ image2 }}" title="{{ name2 }}"></td>
+  </tr>
+</table>
