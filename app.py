@@ -1,3 +1,4 @@
+import argparse
 import base64
 import glob
 import json
@@ -5,33 +6,44 @@ import os
 import sys
 
 from PIL import Image
+from flask import Flask, render_template, redirect, url_for, request, make_response
 from io import BytesIO
 from logic import Annotation
 
-IMAGE_FOLDER = sys.argv[1]
-try:
-    with open(sys.argv[2]) as f:
-        heuristics = json.load(f)
-except:
-    heuristics = None
-ann = Annotation(os.listdir(IMAGE_FOLDER), heuristics)
+ap = argparse.ArgumentParser()
+ap.add_argument('folder', help='path of the image folder, where each subfolder\'s name is the respective label name')
+ap.add_argument('--order', '-o', default=None, help='[optional]path to the json file that holds a list of pairs of labels')
+ap.add_argument('--port', '-p', default=5000, type=int, help='port number for http requests')
+ap.add_argument('--debug', action='store_true', help='debug mode')
+args = ap.parse_args()
+
+if args.order is not None:
+    with open(args.order) as f:
+        order = json.load(f)
+else:
+    order = None
+
+ann = Annotation(os.listdir(args.folder), order)
 contribution = {}
 
-from flask import Flask, render_template, redirect, url_for, request, make_response
-
 app = Flask(__name__, template_folder='./templates')
-app.config['UPLOAD_FOLDER'] = IMAGE_FOLDER
+app.config['UPLOAD_FOLDER'] = args.folder
 
 
 @app.route('/', methods=['POST', 'GET'])
 def home():
-    return render_template('login.html')
+    username = request.cookies.get('username')
+    if username in contribution:
+        return redirect(url_for('annotator'))
+    else:
+        return render_template('login.html')
 
 
 @app.route('/login', methods=['POST'])
 def login():
     name = request.form.get('username')
-    contribution[name] = 0
+    if name not in contribution:
+        contribution[name] = 0
     resp = make_response(redirect(url_for('annotator')))
     resp.set_cookie('username', name)
     return resp
@@ -40,7 +52,10 @@ def login():
 @app.route('/annotator', methods=['POST', 'GET'])
 def annotator():
     username = request.cookies.get('username')
-    done = contribution[username]
+    try:
+        done = contribution[username]
+    except KeyError:
+        return render_template('login.html')
     try:
         n1, n2 = ann.new_job()
     except TypeError:
@@ -54,7 +69,7 @@ def annotator():
 
 
 def image_html(name):
-    folder = os.path.join(IMAGE_FOLDER, name, '*.jpg')
+    folder = os.path.join(args.folder, name, '*.jpg')
     img_lst = []
     width = height = 0
     width_lst = []
@@ -77,7 +92,10 @@ def image_html(name):
 @app.route('/submit', methods=['POST'])
 def submit():
     username = request.cookies.get('username')
-    contribution[username] += 1
+    try:
+        contribution[username] += 1
+    except KeyError:
+        return render_template('login.html')
     name1 = request.form.get('name1')
     name2 = request.form.get('name2')
     case = request.form.get('submit')
@@ -93,6 +111,25 @@ def download():
     return json.dumps({n.name:[m.name for m in n if m.name != n.name] for n in ann.visited}, indent=2)
 
 
+@app.route('/upload', methods=['POST'])
+def upload():
+    record = request.files.get('record')
+    if record:
+        record = json.loads(record.read())
+        for name1, names in record.items():
+            for name2 in names:
+                ann.submit(True, name1, name2)
+    return f'uploaded\n'
+
+
+@app.route('/contributor')
+def contributor():
+    page = '<table border="1"><tr><th>NAME</th><th>ANNOTATED</th></tr>{}</table>'
+    table = ''
+    for k, v in contribution.items():
+        table += f'<tr> <td>{k}</td> <td>{v}</td> </tr>'
+    return page.format(table)
+
+
 if __name__ == '__main__':
-    app.debug = True
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0', port=args.port, debug=args.debug)

@@ -16,7 +16,9 @@ class Annotation:
         if self.heuristics:
             while len(self.heuristics):
                 k, n = map(self.get_node.__getitem__, self.heuristics.pop())
-                if n in self.candidates[k]:
+                if k not in self.candidates:
+                    continue
+                elif n in self.candidates[k]:
                     return k, n
                 else:
                     continue

@@ -31,12 +31,24 @@ IMAGE_FOLDER
 
 ## Launch
 ```bash
-python app.py ${IMAGE_FOLDER} [${WORK_LIST.json}]
+python app.py ${IMAGE_FOLDER} [-o ${WORK_LIST.json}] [-p ${PORT}]
 ```
 This should prompt you a HTTP link that users can access. For example `http://0.0.0.0:5000/`
 
 ## Work flow
 1. go to the home page `http://${HOST_IP}:${PORT}`
-2. then enter a user name and `login`
+2. then enter a user name and `login` if it's the first time
 3. select `yes` or `no` repeatedly until the annotation is finished
 4. once done, a summary page will show up and you can download the annotations in `json`
+
+## Data persistence
+### save
+```bash
+curl http://${HOST_IP}:${PORT}/download > backup.json
+```
+### load
+```bash
+curl -F "record=@backup.json" http://${HOST_IP}:${PORT}/upload
+```
+
+<!-- ## Coming soon -->
