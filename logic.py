@@ -27,6 +27,21 @@ class Annotation:
                 n = choice(list(v))
                 return k, n
 
+    def _ignore(self, n):
+        # n = self.get_node[n]
+        ns = self.candidates.pop(n)
+        self.max_step -= len(ns)
+        for k in self.candidates:
+            if k.name < n.name:
+                if n in self.candidates[k]:
+                    self.candidates[k].remove(n)
+                    self.max_step -= 1
+        ns = self.visited.pop(n)
+
+    def ignore(self, n):
+        n = self.get_node[n]
+        self._ignore(n)
+
     def submit(self, merge:bool, n1, n2):
         n1 = self.get_node[n1]
         n2 = self.get_node[n2]
@@ -44,14 +59,7 @@ class Annotation:
             else:
                 n = r2.attach(r1)
             if n:
-                ns = self.candidates.pop(n)
-                self.max_step -= len(ns)
-                for k in self.candidates:
-                    if k.name < n.name:
-                        if n in self.candidates[k]:
-                            self.candidates[k].remove(n)
-                            self.max_step -= 1
-                ns = self.visited.pop(n)
+                self._ignore(n)
                 ## TODO: inherit heuristics
         else:
             self.max_step -= 1

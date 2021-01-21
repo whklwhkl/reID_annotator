@@ -7,6 +7,7 @@ import sys
 
 from PIL import Image
 from flask import Flask, render_template, redirect, url_for, request, make_response
+from functools import wraps
 from io import BytesIO
 from logic import Annotation
 
@@ -49,13 +50,21 @@ def login():
     return resp
 
 
+def require_user(fn):
+    @wraps(fn)
+    def wrapped():
+        username = request.cookies.get('username')
+        try:
+            done = contribution[username]
+        except KeyError:
+            return render_template('login.html')
+        return fn(username, done)
+    return wrapped
+
+
 @app.route('/annotator', methods=['POST', 'GET'])
-def annotator():
-    username = request.cookies.get('username')
-    try:
-        done = contribution[username]
-    except KeyError:
-        return render_template('login.html')
+@require_user
+def annotator(username, done):
     try:
         n1, n2 = ann.new_job()
     except TypeError:
@@ -89,13 +98,19 @@ def image_html(name):
     return ims
 
 
+@app.route('/ignore', methods=['POST', 'GET'])
+@require_user
+def ignore(username, done):
+    contribution[username] = 1 + done
+    name = request.args.get('name')
+    ann.ignore(name)
+    return redirect(url_for('annotator'))
+
+
 @app.route('/submit', methods=['POST'])
-def submit():
-    username = request.cookies.get('username')
-    try:
-        contribution[username] += 1
-    except KeyError:
-        return render_template('login.html')
+@require_user
+def submit(username, done):
+    contribution[username] = 1 + done
     name1 = request.form.get('name1')
     name2 = request.form.get('name2')
     case = request.form.get('submit')
