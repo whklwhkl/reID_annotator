@@ -78,17 +78,18 @@ def annotator(username, done):
 
 
 def image_html(name):
-    folder = os.path.join(args.folder, name, '*.jpg')
+    folder = os.path.join(args.folder, name, '*.*')
     img_lst = []
     width = height = 0
     width_lst = []
     for p in glob.glob(folder):
-        img = Image.open(p)
-        w, h = img.size
-        width_lst.append(width)
-        width += w
-        height = max(height, h)
-        img_lst.append(Image.open(p))
+        if p.endswith(('.jpg', '.png', '.JPG', '.PNG')):
+            img = Image.open(p)
+            w, h = img.size
+            width_lst.append(width)
+            width += w
+            height = max(height, h)
+            img_lst.append(Image.open(p))
     new_img = Image.new('RGB', [width, height])
     for i, w in zip(img_lst, width_lst):
         new_img.paste(i, [w, 0])
