@@ -84,17 +84,25 @@ def image_html(name):
     width_lst = []
     for p in glob.glob(folder):
         if p.endswith(('.jpg', '.png', '.JPG', '.PNG')):
-            img = Image.open(p)
+            try:
+                img = Image.open(p)
+            except OSError:
+                continue
             w, h = img.size
             width_lst.append(width)
             width += w
             height = max(height, h)
             img_lst.append(Image.open(p))
+            if len(img_lst) > 10:
+                break
     new_img = Image.new('RGB', [width, height])
     for i, w in zip(img_lst, width_lst):
         new_img.paste(i, [w, 0])
     imb = BytesIO()
-    new_img.save(imb, format='PNG')
+    try:
+        new_img.save(imb, format='PNG')
+    except SystemError:
+        Image.new('RGB', [32, 32]).save(imb, format='PNG')
     ims = base64.b64encode(imb.getvalue()).decode('utf-8')
     return ims
 
