@@ -140,7 +140,7 @@ def submit(username, done):
 
 @app.route('/download')
 def download():
-    return json.dumps({n.name:[m.name for m in n if m.name != n.name] for n in ann.visited}, indent=2)
+    return json.dumps({n.name:[m.name for m in n if m.name != n.name] for n in ann.visited}, indent=2, ensure_ascii=False)
 
 
 @app.route('/upload', methods=['POST'])
