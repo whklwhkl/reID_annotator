@@ -9,12 +9,12 @@ from PIL import Image
 from flask import Flask, render_template, redirect, url_for, request, make_response
 from functools import wraps
 from io import BytesIO
-from logic import Annotation
+from logic import Annotation, AnnotationFromScratch
 
 ap = argparse.ArgumentParser()
 ap.add_argument('folder', help='path of the image folder, where each subfolder\'s name is the respective label name')
 ap.add_argument('--order', '-o', default=None, help='[optional]path to the json file that holds a list of pairs of labels')
-ap.add_argument('--port', '-p', default=5000, type=int, help='port number for http requests')
+ap.add_argument('--port', '-p', default=80, type=int, help='port number for http requests')
 ap.add_argument('--debug', action='store_true', help='debug mode')
 args = ap.parse_args()
 
@@ -24,7 +24,11 @@ if args.order is not None:
 else:
     order = None
 
-ann = Annotation(os.listdir(args.folder), order)
+subdirs = os.listdir(args.folder)
+if any(os.path.isdir(x) for x in subdirs):
+    ann = Annotation(subdirs, order)
+else:
+    ann = AnnotationFromScratch(subdirs)
 contribution = {}
 
 app = Flask(__name__, template_folder='./templates')
@@ -78,6 +82,10 @@ def annotator(username, done):
 
 
 def image_html(name):
+    if name.lower().endswith(('.jpg', '.png')):
+        with open(os.path.join(args.folder, name), 'rb') as f:
+            buf = f.read()
+        return base64.b64encode(buf).decode('utf-8')
     folder = os.path.join(args.folder, name, '*.*')
     img_lst = []
     width = height = 0

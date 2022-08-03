@@ -63,3 +63,14 @@ class Annotation:
                 ## TODO: inherit heuristics
         else:
             self.max_step -= 1
+
+
+class AnnotationFromScratch(Annotation):
+    def __init__(self, inputs):
+        nodes = set(Node(x) for x in inputs)
+        self.candidates = {k: set(n for n in nodes - set(k) if n.name > k.name) for k in nodes}
+        self.visited = {k: set() for k in nodes}
+        self.get_node = {x.name: x for x in nodes}
+        l = len(nodes)
+        self.max_step = l * (l - 1) // 2
+        self.heuristics = None
