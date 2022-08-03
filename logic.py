@@ -67,7 +67,7 @@ class Annotation:
 
 class AnnotationFromScratch(Annotation):
     def __init__(self, inputs):
-        nodes = set(Node(x) for x in inputs)
+        nodes = set(Node(x) for x in inputs if x.lower().endswith(('.jpg', '.png')))
         self.candidates = {k: set(n for n in nodes - set(k) if n.name > k.name) for k in nodes}
         self.visited = {k: set() for k in nodes}
         self.get_node = {x.name: x for x in nodes}
